@@ -3,9 +3,9 @@
 <h3> Members </h3> 
 <ul>
   <li>Andrea Cheah Shiue Er</li>
+  <li>Florence Elizabeth Nguyen Shi Ky</li>
   <li>Fung Jing Wen Elisabeth</li>
   <li>Peh Yu Xiang</li>
-  <li>Florence Elizabeth Nguyen Shi Ky</li>
-  <li>Zachary Low Yang Kai</li>
   <li>Tan Zi Hui</li>
+  <li>Zachary Low Yang Kai</li>
 </ul>
