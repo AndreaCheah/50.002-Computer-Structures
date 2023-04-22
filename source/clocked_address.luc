@@ -1,0 +1,39 @@
+module clocked_address (
+    input clk,  // clock
+    input rst,  // reset
+    input level[2], // 4 levels for the game
+    output rom_address_out[10],
+    output shift_down
+  ) {
+
+   sig current_clk;
+  .clk(clk){
+    edge_detector c_clk_edge( #RISE(1), #FALL(0));
+    .rst(rst){
+      dff rom_address[10](#INIT(0));
+      counter general_clock(#SIZE(32));}
+  }
+  
+  always {
+    
+    case(level){
+      b00: current_clk = general_clock.value[28]; // period about 1 second 
+      b01: current_clk = general_clock.value[27]; // period about 0.5 second
+      b10: current_clk = general_clock.value[26]; // period about 0.25 second
+      b11: current_clk = general_clock.value[25]; 
+      default: current_clk = 0;
+  
+    }
+    
+    c_clk_edge.in = current_clk;
+    
+    if (c_clk_edge.out){
+      rom_address.d = rom_address.q + 1;
+      
+    }
+    shift_down = c_clk_edge.out; 
+    
+    rom_address_out = rom_address.q;
+
+  }
+}

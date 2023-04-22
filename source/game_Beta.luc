@@ -1,0 +1,99 @@
+module game_Beta (
+    input button_1,
+    input button_2,
+    input button_3,
+    input start_button,
+    input reset_button,
+    input clk,  // clock
+    input rst,  // reset
+    
+    output led_out[5][3],
+    output dec_score_inc,
+    output dec_score_rst
+
+    
+  ) {
+  
+  //temp variables
+  sig inputAlu_a[16];
+  sig inputAlu_b[16];
+  
+  
+  
+
+  .clk(clk){
+    .rst(rst){
+      game_CU_v2 game_controlunit;
+      game_regfile_v2 regfile;
+      alu16 game_alu;
+      level_generator rom;
+
+    }
+  }
+  always {
+
+    //pass button press signal to CU unit
+    game_controlunit.button_1 = button_1;
+    game_controlunit.button_2 = button_2;
+    game_controlunit.button_3 = button_3;
+    game_controlunit.start_button = start_button;
+    game_controlunit.reset_button = reset_button;
+    
+    
+    //Setup REGFILE unit 
+    regfile.we = game_controlunit.we_regfile;
+    regfile.write_address = game_controlunit.regfile_write_address;
+   
+    regfile.read_address_a = game_controlunit.regfile_read_address_a;
+    regfile.read_address_b = game_controlunit.regfile_read_address_b;
+    
+    //bootstrap reg_a output to CU for convenient branching conditions
+    //game_controlunit.regfile_datain = regfile.out_a;
+    
+    //connection between level in cu and level_generator
+    rom.level = game_controlunit.level;
+    
+    //connection between output of the led in cu and level_generator
+    game_controlunit.led_in = rom.out;
+    
+    
+    //asel mux
+    case(game_controlunit.asel){
+      b00 : inputAlu_a = regfile.out_a;
+      b01 : inputAlu_a = 0;
+      default : 
+          inputAlu_a = 0;
+    }
+    
+    //bsel mux
+    case(game_controlunit.bsel){
+      b00 : inputAlu_b = regfile.out_b;
+      b01 : inputAlu_b = 1; //to increment score
+      b10 : inputAlu_b = rom.out[0]; //to compare the value of the first led row with button input
+      b11 : inputAlu_b = 10; // for division
+      default: //necessary to init
+          inputAlu_b = 0;
+    }
+    
+    //ALU
+    game_alu.x = inputAlu_a;
+    game_alu.y = inputAlu_b;
+    game_alu.alufn= game_controlunit.alufn;
+   
+    //ALU directly to FSM in control unit
+    game_controlunit.alu_read = game_alu.out; //read only and not storing
+    
+    //wdsel mux
+    case (game_controlunit.wdsel){
+      b01 : regfile.data = game_controlunit.data_goto_reg; //data from fsm gointo reg in regfile
+      default : //b00
+        regfile.data = game_alu.out; //"data" input in regfile so if we = 1 and as long as we give the write address, we can rewrite the data at that point
+    }
+    
+    //output to be seen
+    led_out = game_controlunit.led_out;
+    dec_score_inc = game_controlunit.dec_score_inc;
+    dec_score_rst = game_controlunit.dec_score_rst;
+
+  }
+}

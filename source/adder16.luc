@@ -1,0 +1,56 @@
+module adder16 (
+    input clk,
+    input rst,
+    input x[16],  // 16-bit x input 
+    input y[16],  // 16-bit y input 
+    input alufn[6],  // 6-bits ALUFN0 signal
+    output s[16],  // 16 bits sum output 
+    output cout,  // 1-bit carry out output: '1' when there is cout from msb
+    output z,  // 1-bit z output; '1' when all s outputs are zero
+    output v,  // 1-bit v output; '1' when addition operation overflows
+    output n,  // 1-bit n output; '1' when s is negative
+    output err  // error signal for the module (set by multiplier16 submodule)
+  ) {
+
+  sig result[16];  // Store result of z,v and n
+  // use multiplier tp implement addition & subtraction
+  // instantiate 16-bit multiplier submodule; with inputs x, y and alufn[5:0]
+  multiplier16 multiplier16 (.x(x), .y(y), .alufn(alufn[5:0]));  
+
+  .clk(clk), .rst(rst) {
+  }
+
+  always {
+    err = 0;
+    
+    case (alufn[3:2]) {  // alufn[3:2] choose adder/multiplier
+      // adder
+      b00:  
+        case (alufn[0]) {  // add (x+y) or subtract (x-y) based on alufn[0]
+          b0:  // addition: if alufn[0]=0
+            result = x + y;
+          b1:  // if alufn[0]=1 
+            result = x - y;
+          default:
+            result = 16b0;
+        }
+      // multiplier
+      b01:  
+        result = multiplier16.s;
+        err = multiplier16.error;
+
+      default:
+        result = 16b0;
+    }
+
+    // calculate z v n
+    z = ~|result;  //to result, carry out OR operation & carry out NOT operatrion on result  
+    // v: (case1: operands same sign, result different sign) OR (case 2: operands sign different, result sign same)
+    v = (x[15] & (y[15] ^ alufn[0]) & ~result[15]) | (~x[15] & ~(y[15] ^ alufn[0]) & result[15]);
+    n = result[15];   // calculates most significant bit; if n is negative then n=1  
+
+    s = result;  // assign 16-bit result to sum
+    // cout: (case1: msb of x & y is 1, msb of result != 1) OR (case2: msb of x or y != 1, msb of result = 1) 
+    cout = (x[15] & y[15] & ~result[15]) | (~x[15] & ~y[15] & result[15]);
+  }
+}

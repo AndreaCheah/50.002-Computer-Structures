@@ -1,0 +1,18 @@
+module level_generator (
+    input clk,  // clock
+    input rst,  // reset
+    input level[2], // level 0, 1, 2, 3 for this game
+    output out[5][3], // 5 rows, 3 columns of obstacles 
+    output shift_down
+  ) {
+
+  led_rom led_rom; 
+  clocked_address address(.clk(clk), .rst(rst));
+  always {
+    out = led_rom.out;
+    led_rom.address = address.rom_address_out; // LED rom receives address from clocked address unit 
+    address.level = level;
+    shift_down = address.shift_down;
+    
+  }
+}
