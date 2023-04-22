@@ -1,0 +1,57 @@
+module game_regfile_v2 (
+    input clk,  // clock
+    input rst,  // reset
+    input write_address[4], // write address (rc address)
+    input we, // write enable
+    input data[16], // data in
+    input read_address_a[4], //address port a (ra address)
+    input read_address_b[4], //address port b (rb address)
+    
+    output out_a[16], //read port a (ra data)
+    output out_b[16] //read port b (rb data)
+  ) {
+  
+  .clk(clk){
+  .rst(rst){
+    dff button_input[16](#INIT(0));
+    dff level_input[16](#INIT(0));
+    dff score[16](#INIT(0));
+    dff temp1[16](#INIT(0));
+      
+      }
+    }
+
+  always {
+  //write port
+    if (we){
+      case(write_address){    // rc
+        b0000 : button_input.d = data; //to store what was the button pressed
+        b0001 : level_input.d = data; //for our rom address
+        b0010 : score.d = data; 
+        b1111 : temp1.d = data; 
+      }
+    }
+    
+    //read port a
+    case(read_address_a){    // ra
+        b0000 : out_a = button_input.q; 
+        b0001 : out_a = level_input.q; 
+        b0010 : out_a = score.q; 
+        b1111 : out_a = temp1.q; 
+        default : out_a = 0;
+    }
+    
+    //read port b
+    case(read_address_b){    // rb
+        b0000 : out_b = button_input.q; 
+        b0001 : out_b = level_input.q; 
+        b0010 : out_b = score.q; 
+        b1111 : out_b = temp1.q; 
+        default : out_b = 0;
+    }
+    
+    
+    
+    
+  }
+}

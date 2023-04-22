@@ -1,0 +1,92 @@
+module au_top (
+    input clk,              // 100MHz clock
+    input rst_n,            // reset button (active low)
+    output led [8],         // 8 user controllable LEDs
+    input usb_rx,           // USB->Serial input
+    output usb_tx,          // USB->Serial output
+    output io_led [3][8],   // LEDs on IO Shield
+    output io_seg [8],      // 7-segment LEDs on IO Shield
+    output io_sel [4],      // Digit select on IO Shield
+    input io_button [5],    // 5 buttons on IO Shield
+    input io_dip [3][8]     // DIP switches on IO Shield
+  ) {
+  
+  sig rst;                  // reset signal
+  
+  
+  .clk(clk) {
+    .rst(rst){
+      multi_seven_seg seg;
+      game_Beta game;
+      
+    }
+    // The reset conditioner is used to synchronize the reset signal to the FPGA
+    // clock. This ensures the entire FPGA comes out of reset at the same time.
+    reset_conditioner reset_cond;
+    edge_detector edge_dt_btn_start (#RISE(1), #FALL(0));
+    edge_detector edge_dt_btn_reset(#RISE(1), #FALL(0));
+    edge_detector edge_dt_btn_1 (#RISE(1), #FALL(0));
+    edge_detector edge_dt_btn_2 (#RISE(1), #FALL(0));
+    edge_detector edge_dt_btn_3 (#RISE(1), #FALL(0));
+    
+    button_conditioner btn_cond_start;
+    button_conditioner btn_cond_reset;
+    button_conditioner btn_cond_1;
+    button_conditioner btn_cond_2;
+    button_conditioner btn_cond_3;
+    
+    multi_dec_ctr dec_ctr;
+    
+    
+  }
+  
+  
+  always {
+    reset_cond.in = ~rst_n; // input raw inverted reset signal
+    rst = reset_cond.out;   // conditioned reset
+    io_led = 3x{{8h00}}; // we want to always produce valid output signals, so if we don't know what its value is yet, just set to zero first, and overwrite later
+    io_seg = 8h00;
+    io_sel = 4h0;
+    led = 8h00;             // turn LEDs off
+    usb_tx = usb_rx;        // echo the serial data
+    
+    
+    //assign btn inputs to specified io_button
+    btn_cond_start.in = io_button[4];
+    btn_cond_reset.in = io_button[3];
+    btn_cond_1.in = io_button[0];
+    btn_cond_2.in = io_button[1];
+    btn_cond_3.in = io_button[2];
+    
+    //btn conditioning with edge_detector and btn condt
+    edge_dt_btn_start.in = btn_cond_start.out;
+    edge_dt_btn_reset.in = btn_cond_reset.out;
+    edge_dt_btn_1.in = btn_cond_1.out;
+    edge_dt_btn_2.in = btn_cond_2.out;
+    edge_dt_btn_3.in = btn_cond_3.out;
+    
+    game.start_button = edge_dt_btn_start.out;
+    game.reset_button = edge_dt_btn_reset.out;
+    game.button_1 = edge_dt_btn_1.out;
+    game.button_2 = edge_dt_btn_2.out;
+    game.button_3 = edge_dt_btn_3.out;
+    
+    //output led value to assgined io_led
+    io_led[0][2:0] = game.led_out[0];
+    io_led[0][5:3] = game.led_out[1];
+    io_led[1][2:0] = game.led_out[2];
+    io_led[1][5:3] = game.led_out[3];
+    io_led[2][2:0] = game.led_out[4];
+    
+    //7 seg display for score only
+    dec_ctr.inc = game.dec_score_inc;
+    dec_ctr.rst = game.dec_score_rst;
+    seg.values = dec_ctr.digits;
+    
+    io_seg = ~seg.seg;
+    io_sel = ~seg.sel;
+    
+    
+    
+  }
+}

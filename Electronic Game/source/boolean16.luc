@@ -1,0 +1,30 @@
+module boolean16 (
+    input alufn[6],  // 6-bit ALUFN0 input
+    input x[16],  // 16-bit x input 
+    input y[16],  // 16-bit y input 
+    output result[16]  //16-bit result of boolean16 module 
+  ) {
+
+  always {
+    case (alufn[3:0]) {  // use alufn[3:0] to choose logic operations
+      b0000: // set result to all 0
+        result = 16b0;
+      b0001: // NOR
+        result = ~(x | y);
+      b0110: // XOR
+        result = x ^ y;
+      b0111: // NAND
+        result = ~(x & y);
+      b1000: // AND
+        result = x & y;
+      b1001: // XNOR
+        result = ~(x ^ y);
+     // b1010: // X copies the value of x input to result 
+        //result = x;
+      b1110: // OR
+        result = x | y;
+      default:  // handles not defined values of alufn[3:0] 
+        result = 16b0;
+    }
+  }
+}
